@@ -68,13 +68,15 @@ def image_to_base64():
     }
 
     images = [
-        file for file in INPUT_DIR.iterdir()
-        if file.is_file() and file.suffix.lower() in image_extensions
+        file
+        for file in INPUT_DIR.iterdir()
+        if file.is_file()
+        and file.suffix.lower() in image_extensions
     ]
 
     if not images:
-        print(f"\ninput 文件夹中没有找到图片。")
-        print(f"图片应该放在：{INPUT_DIR}")
+        print("\ninput 文件夹中没有找到图片。")
+        print(f"请将图片放入：{INPUT_DIR}")
         return
 
     print("\n找到以下图片：")
@@ -87,28 +89,46 @@ def image_to_base64():
     try:
         index = int(choice) - 1
         image_path = images[index]
+
     except (ValueError, IndexError):
         print("\n选择无效。")
         return
 
     try:
-        # 读取二进制图片
+        # 读取图片二进制数据
         image_data = image_path.read_bytes()
 
         # Base64 编码
-        encoded = base64.b64encode(image_data).decode("ascii")
+        encoded = base64.b64encode(
+            image_data
+        ).decode("ascii")
 
         # 获取 MIME 类型
-        mime_type, _ = mimetypes.guess_type(image_path.name)
+        mime_type, _ = mimetypes.guess_type(
+            image_path.name
+        )
 
         if mime_type is None:
             mime_type = "application/octet-stream"
 
-        # 生成 Data URI
-        result = f"data:{mime_type};base64,{encoded}"
+        # 创建 Data URI
+        result = (
+            f"data:{mime_type};base64,{encoded}"
+        )
 
-        print("\nBase64：")
-        print(result)
+        # 输出文件名
+        output_name = image_path.stem + ".base64"
+        output_path = OUTPUT_DIR / output_name
+
+        # 保存 Base64
+        output_path.write_text(
+            result,
+            encoding="utf-8"
+        )
+
+        print("\n转换成功！")
+        print(f"Base64 已保存到：")
+        print(output_path)
 
     except Exception as e:
         print("\n处理图片失败：")
@@ -120,51 +140,81 @@ def image_to_base64():
 # =========================
 
 def base64_to_image():
-    print("\n请输入 Base64。")
-    print("如果内容很长，可以直接粘贴后按回车。")
+    base64_extensions = {
+        ".base64",
+        ".txt"
+    }
 
-    encoded = input("\nBase64：").strip()
+    files = [
+        file
+        for file in INPUT_DIR.iterdir()
+        if file.is_file()
+        and file.suffix.lower() in base64_extensions
+    ]
+
+    if not files:
+        print("\ninput 文件夹中没有找到 Base64 文件。")
+        print(f"请将 .base64 或 .txt 文件放入：{INPUT_DIR}")
+        return
+
+    print("\n找到以下 Base64 文件：")
+
+    for i, file in enumerate(files, 1):
+        print(f"{i}. {file.name}")
+
+    choice = input("\n请选择文件编号：").strip()
 
     try:
-        # 支持：
-        # data:image/jpeg;base64,/9j/...
-        # 以及纯 Base64
+        index = int(choice) - 1
+        base64_path = files[index]
+
+    except (ValueError, IndexError):
+        print("\n选择无效。")
+        return
+
+    try:
+        # 从文件读取 Base64
+        encoded = base64_path.read_text(
+            encoding="utf-8"
+        ).strip()
+
+        # 默认扩展名
+        extension = ".bin"
+
+        # 如果是 Data URI
         if encoded.startswith("data:"):
             header, encoded = encoded.split(",", 1)
 
-            # 从 data:image/jpeg;base64 中获取 MIME
+            # 例如：
+            # data:image/jpeg;base64
             mime_type = header.split(";")[0][5:]
 
-            extension = mimetypes.guess_extension(mime_type)
+            extension = mimetypes.guess_extension(
+                mime_type
+            )
 
             if extension is None:
                 extension = ".bin"
 
-        else:
-            extension = ".bin"
-
-        # 解码
+        # 解码 Base64
         image_data = base64.b64decode(encoded)
 
-        # 让用户输入文件名
-        filename = input(
-            f"\n请输入输出文件名（直接回车使用 output{extension}）："
-        ).strip()
-
-        if not filename:
-            filename = f"output{extension}"
-
-        output_path = OUTPUT_DIR / filename
+        # 默认使用 Base64 文件名
+        output_name = base64_path.stem + extension
+        output_path = OUTPUT_DIR / output_name
 
         # 写入图片
         output_path.write_bytes(image_data)
 
         print("\n转换成功！")
-        print(f"图片已保存到：")
+        print("图片已保存到：")
         print(output_path)
 
+    except ValueError:
+        print("\nBase64 格式错误。")
+
     except Exception as e:
-        print("\nBase64 解码失败：")
+        print("\n处理失败：")
         print(e)
 
 
@@ -180,8 +230,8 @@ def main():
 
         print("1. 文字 → Base64")
         print("2. Base64 → 文字")
-        print("3. 图片 → Base64")
-        print("4. Base64 → 图片")
+        print("3. 图片 → Base64 文件")
+        print("4. Base64 文件 → 图片")
         print("0. 退出")
 
         choice = input("\n请选择模式：").strip()
