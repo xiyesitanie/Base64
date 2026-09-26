@@ -1,0 +1,33 @@
+# =========================
+# Python
+# =========================
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# =========================
+# IDE / Editor
+# =========================
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# =========================
+# Project generated files
+# =========================
+
+# Generated output
+output/*
+
+# Input images
+input/*
